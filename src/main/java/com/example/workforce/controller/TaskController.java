@@ -1,11 +1,9 @@
 package com.example.workforce.controller;
 
+import com.example.workforce.common.model.Comment;
+import com.example.workforce.dto.*;
+import com.example.workforce.service.TaskService;
 import com.example.workforce.common.model.TaskManagement;
-import com.example.workforce.dto.TaskManagementDto;
-import com.example.workforce.dto.TaskCreateRequest;
-import com.example.workforce.dto.UpdateTaskRequest;
-import com.example.workforce.dto.AssignByReferenceRequest;
-import com.example.workforce.dto.TaskFetchByDateRequest;
 import com.example.workforce.common.model.response.Response;
 import com.example.workforce.service.TaskManagementService;
 import org.springframework.web.bind.annotation.*;
@@ -17,9 +15,12 @@ import java.util.List;
 public class TaskController {
 
     private final TaskManagementService taskManagementService;
+    private final TaskService taskService; // ✅ Add this
 
-    public TaskController(TaskManagementService taskManagementService) {
+    // ✅ Inject both services in the constructor
+    public TaskController(TaskManagementService taskManagementService, TaskService taskService) {
         this.taskManagementService = taskManagementService;
+        this.taskService = taskService;
     }
 
     @GetMapping("/{id}")
@@ -46,4 +47,28 @@ public class TaskController {
     public Response<List<TaskManagementDto>> fetchByDate(@RequestBody TaskFetchByDateRequest request) {
         return new Response<>(taskManagementService.fetchTasksByDate(request));
     }
+
+    @GetMapping
+    public List<TaskManagement> getAllTasks() {
+        return taskManagementService.getAllRawTasks();  // ✅ Now works
+    }
+
+    @PostMapping("/update-priority")
+    public Response<String> updatePriority(@RequestBody UpdatePriorityRequest request) {
+        return new Response<>(taskManagementService.updateTaskPriority(request));
+    }
+
+    @GetMapping("/priority/{priority}")
+    public Response<List<TaskManagementDto>> getByPriority(@PathVariable String priority) {
+        return new Response<>(taskManagementService.getTasksByPriority(priority));
+    }
+
+
+    @PostMapping("/{id}/comment")
+    public Response<String> addComment(@PathVariable Long id, @RequestBody Comment comment) {
+        return new Response<>(taskManagementService.addCommentToTask(id, comment));
+    }
+
+
+
 }

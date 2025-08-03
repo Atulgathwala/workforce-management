@@ -4,7 +4,13 @@ import com.example.workforce.common.model.enums.Priority;
 import com.example.workforce.common.model.enums.Task;
 import com.example.workforce.common.model.enums.TaskStatus;
 import com.example.workforce.common.model.enums.ReferenceType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.EnumType;
 import lombok.Data;
+
+import java.util.ArrayList;
+import java.util.List;
+
 
 @Data
 public class TaskManagement {
@@ -14,7 +20,12 @@ public class TaskManagement {
     private Task task;
     private String description;
     private TaskStatus status;
-    private Long assigneeId; // Simplified from Entity for this assignment
+    private Long assigneeId;
     private Long taskDeadlineTime;
+    private List<Comment> comments = new ArrayList<>();
+    private List<String> activityLogs = new ArrayList<>();
+
+    @Enumerated(EnumType.STRING)
     private Priority priority;
+
 }

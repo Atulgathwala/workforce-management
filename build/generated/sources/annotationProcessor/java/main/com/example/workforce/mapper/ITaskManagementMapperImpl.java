@@ -1,5 +1,6 @@
 package com.example.workforce.mapper;
 
+import com.example.workforce.common.model.Comment;
 import com.example.workforce.common.model.TaskManagement;
 import com.example.workforce.dto.TaskManagementDto;
 import java.util.ArrayList;
@@ -9,7 +10,7 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2025-08-02T22:40:12+0530",
+    date = "2025-08-03T13:51:11+0530",
     comments = "version: 1.5.5.Final, compiler: IncrementalProcessingEnvironment from gradle-language-java-8.12.jar, environment: Java 23-valhalla (Oracle Corporation)"
 )
 @Component
@@ -32,6 +33,14 @@ public class ITaskManagementMapperImpl implements ITaskManagementMapper {
         taskManagementDto.setAssigneeId( taskManagement.getAssigneeId() );
         taskManagementDto.setTaskDeadlineTime( taskManagement.getTaskDeadlineTime() );
         taskManagementDto.setPriority( taskManagement.getPriority() );
+        List<Comment> list = taskManagement.getComments();
+        if ( list != null ) {
+            taskManagementDto.setComments( new ArrayList<Comment>( list ) );
+        }
+        List<String> list1 = taskManagement.getActivityLogs();
+        if ( list1 != null ) {
+            taskManagementDto.setActivityLogs( new ArrayList<String>( list1 ) );
+        }
 
         return taskManagementDto;
     }
@@ -52,6 +61,14 @@ public class ITaskManagementMapperImpl implements ITaskManagementMapper {
         taskManagement.setStatus( dto.getStatus() );
         taskManagement.setAssigneeId( dto.getAssigneeId() );
         taskManagement.setTaskDeadlineTime( dto.getTaskDeadlineTime() );
+        List<Comment> list = dto.getComments();
+        if ( list != null ) {
+            taskManagement.setComments( new ArrayList<Comment>( list ) );
+        }
+        List<String> list1 = dto.getActivityLogs();
+        if ( list1 != null ) {
+            taskManagement.setActivityLogs( new ArrayList<String>( list1 ) );
+        }
         taskManagement.setPriority( dto.getPriority() );
 
         return taskManagement;

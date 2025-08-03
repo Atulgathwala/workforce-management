@@ -1,7 +1,9 @@
 package com.example.workforce.repository;
 
 import com.example.workforce.common.model.TaskManagement;
+import com.example.workforce.common.model.enums.Priority;
 import com.example.workforce.common.model.enums.ReferenceType;
+import com.example.workforce.common.model.enums.TaskPriority;
 
 import java.util.List;
 import java.util.Optional;
@@ -12,4 +14,8 @@ public interface TaskRepository {
     List<TaskManagement> findAll();
     List<TaskManagement> findByReferenceIdAndReferenceType(Long referenceId, ReferenceType referenceType);
     List<TaskManagement> findByAssigneeIdIn(List<Long> assigneeIds);
+    List<TaskManagement> findByPriority(Priority priority);
+
+
+
 }

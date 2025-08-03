@@ -1,6 +1,9 @@
 package com.example.workforce.service.impl;
 
 import com.example.workforce.common.exception.ResourceNotFoundException;
+import com.example.workforce.common.model.Comment;
+import com.example.workforce.common.model.enums.Priority;
+import com.example.workforce.common.model.enums.TaskPriority;
 import com.example.workforce.dto.*;
 import com.example.workforce.mapper.ITaskManagementMapper;
 import com.example.workforce.common.model.TaskManagement;
@@ -30,6 +33,11 @@ public class TaskManagementServiceImpl implements TaskManagementService {
         TaskManagement task = taskRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Task not found with id: " + id));
         return taskMapper.modelToDto(task);
+    }
+
+    @Override
+    public List<TaskManagement> getAllRawTasks() {
+        return taskRepository.findAll();
     }
 
     @Override
@@ -71,29 +79,32 @@ public class TaskManagementServiceImpl implements TaskManagementService {
     @Override
     public String assignByReference(AssignByReferenceRequest request) {
         List<Task> applicableTasks = Task.getTasksByReferenceType(request.getReferenceType());
-        List<TaskManagement> existingTasks = taskRepository.findByReferenceIdAndReferenceType(request.getReferenceId(), request.getReferenceType());
+        List<TaskManagement> existingTasks = taskRepository.findByReferenceIdAndReferenceType(
+                request.getReferenceId(), request.getReferenceType());
 
         for (Task taskType : applicableTasks) {
             List<TaskManagement> tasksOfType = existingTasks.stream()
                     .filter(t -> t.getTask() == taskType && t.getStatus() != TaskStatus.COMPLETED)
                     .collect(Collectors.toList());
 
-            if (!tasksOfType.isEmpty()) {
-                for (TaskManagement taskToUpdate : tasksOfType) {
-                    taskToUpdate.setAssigneeId(request.getAssigneeId());
-                    taskRepository.save(taskToUpdate);
-                }
-            } else {
-                TaskManagement newTask = new TaskManagement();
-                newTask.setReferenceId(request.getReferenceId());
-                newTask.setReferenceType(request.getReferenceType());
-                newTask.setTask(taskType);
-                newTask.setAssigneeId(request.getAssigneeId());
-                newTask.setStatus(TaskStatus.ASSIGNED);
-                taskRepository.save(newTask);
+            // ✅ Cancel existing tasks
+            for (TaskManagement taskToCancel : tasksOfType) {
+                taskToCancel.setStatus(TaskStatus.CANCELLED);
+                taskRepository.save(taskToCancel);
             }
+
+            // ✅ Create a new task with updated assignee
+            TaskManagement newTask = new TaskManagement();
+            newTask.setReferenceId(request.getReferenceId());
+            newTask.setReferenceType(request.getReferenceType());
+            newTask.setTask(taskType);
+            newTask.setAssigneeId(request.getAssigneeId());
+            newTask.setStatus(TaskStatus.ASSIGNED);
+            newTask.setDescription("Reassigned task");
+            taskRepository.save(newTask);
         }
-        return "Tasks assigned successfully for reference " + request.getReferenceId();
+
+        return "Tasks reassigned successfully for reference " + request.getReferenceId();
     }
 
     @Override
@@ -101,12 +112,57 @@ public class TaskManagementServiceImpl implements TaskManagementService {
         List<TaskManagement> tasks = taskRepository.findByAssigneeIdIn(request.getAssigneeIds());
 
         List<TaskManagement> filteredTasks = tasks.stream()
-                .filter(task -> {
-                    // TODO: Apply startDate and endDate filter if needed
-                    return true;
-                })
+                .filter(task ->
+                        task.getStatus() != TaskStatus.CANCELLED &&
+                                (
+                                        (task.getTaskDeadlineTime() >= request.getStartDate() &&
+                                                task.getTaskDeadlineTime() <= request.getEndDate()) ||
+
+                                                (task.getTaskDeadlineTime() < request.getStartDate() &&
+                                                        task.getStatus() != TaskStatus.COMPLETED)
+                                )
+                )
                 .collect(Collectors.toList());
 
         return taskMapper.modelListToDtoList(filteredTasks);
     }
+
+
+    @Override
+    public String updateTaskPriority(UpdatePriorityRequest request) {
+        TaskManagement task = taskRepository.findById(request.getTaskId())
+                .orElseThrow(() -> new ResourceNotFoundException("Task not found with id: " + request.getTaskId()));
+
+        task.setPriority(Priority.valueOf(request.getPriority()));
+// Assuming TaskPriority is your enum
+        taskRepository.save(task);
+        return "Priority updated successfully.";
+    }
+
+
+    @Override
+    public List<TaskManagementDto> getTasksByPriority(String priority) {
+        Priority taskPriority = Priority.valueOf(priority.toUpperCase());
+        List<TaskManagement> filtered = taskRepository.findByPriority(taskPriority);
+
+
+        return taskMapper.modelListToDtoList(filtered);
+    }
+
+
+    @Override
+    public String addCommentToTask(Long taskId, Comment comment) {
+        TaskManagement task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new ResourceNotFoundException("Task not found with id: " + taskId));
+
+        task.getComments().add(comment);
+        task.getActivityLogs().add("Comment added by " + comment.getAuthor() + " at " + comment.getTimestamp());
+
+        taskRepository.save(task);
+        return "Comment added successfully.";
+    }
+
+
+
+
 }
